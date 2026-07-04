@@ -1,10 +1,955 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Building Material Shop Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+        body {
+            background: #f4f6fa;
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .topbar h1 { font-size: 1.5rem; }
+        .topbar p { opacity: 0.85; font-size: 0.85rem; }
+
+        .tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0 30px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 16px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #888;
+            border-bottom: 3px solid transparent;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #1e3c72;
+            border-bottom-color: #f7a600;
+        }
+
+        .content { padding: 25px 30px; max-width: 1150px; margin: 0 auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            margin-bottom: 22px;
+        }
+
+        .card h2 {
+            margin-bottom: 16px;
+            color: #1e3c72;
+            font-size: 1.1rem;
+            border-left: 4px solid #f7a600;
+            padding-left: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+        input, select {
+            padding: 10px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input:focus, select:focus { border-color: #1e3c72; }
+
+        button {
+            margin-top: 14px;
+            background: linear-gradient(135deg, #f7a600, #ff8c00);
+            color: #fff;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button.secondary { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+        button.danger { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        button.success { background: linear-gradient(135deg, #27ae60, #1e8449); }
+        button.small { padding: 6px 12px; font-size: 0.78rem; margin: 2px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        th, td { padding: 11px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.87rem; }
+        th { background: #1e3c72; color: #fff; font-size: 0.78rem; text-transform: uppercase; }
+        tr:hover { background: #f7f9fc; }
+
+        .low-stock { color: #e74c3c; font-weight: 700; }
+        .ok-stock { color: #27ae60; font-weight: 600; }
+
+        .empty { text-align: center; padding: 25px; color: #999; }
+
+        .status { margin-top: 10px; font-size: 0.85rem; font-weight: 600; }
+        .status.success { color: #27ae60; }
+        .status.error { color: #e74c3c; }
+
+        .stock-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .stock-actions input { width: 70px; padding: 6px 8px; }
+
+        /* Hisob book specific */
+        .customer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 14px;
+        }
+
+        .customer-card {
+            background: #fff;
+            border: 1.5px solid #eee;
+            border-radius: 10px;
+            padding: 16px;
+            transition: 0.2s;
+        }
+
+        .customer-card:hover { border-color: #1e3c72; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .customer-card.selected { border-color: #f7a600; background: #fffaf0; }
+
+        .customer-card h3 { color: #1e3c72; font-size: 1rem; margin-bottom: 4px; cursor: pointer; }
+        .customer-card p { font-size: 0.8rem; color: #888; cursor: pointer; }
+
+        .balance-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .balance-due { background: #fdecea; color: #e74c3c; }
+        .balance-clear { background: #e8f8f0; color: #27ae60; }
+
+        .card-actions { margin-top: 10px; }
+
+        .ledger-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .summary-box {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .summary-box .label { font-size: 0.78rem; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .summary-box .value { font-size: 1.4rem; font-weight: 700; }
+        .summary-box.billed .value { color: #1e3c72; }
+        .summary-box.paid .value { color: #27ae60; }
+        .summary-box.due .value { color: #e74c3c; }
+
+        .section-title { font-weight: 700; margin: 18px 0 8px; color: #1e3c72; font-size: 0.95rem; }
+    </style>
 </head>
 <body>
-$END$
+
+<div class="topbar">
+    <div>
+        <h1>Building Material Shop Manager</h1>
+        <p>Suppliers - Stock - Hisob Book</p>
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab" data-page="suppliers">Suppliers</div>
+    <div class="tab" data-page="materials">Materials & Stock</div>
+    <div class="tab" data-page="history">Stock History</div>
+    <div class="tab active" data-page="hisob">Hisob Book</div>
+    <div class="tab" data-page="dues">Pending Dues</div>
+    <div class="tab" data-page="purchases">Purchases</div>
+</div>
+
+<div class="content">
+
+    <!-- SUPPLIERS PAGE -->
+    <div class="page" id="suppliers">
+        <div class="card">
+            <h2>Add New Supplier</h2>
+            <form id="supplierForm">
+                <div class="form-grid">
+                    <input type="text" id="supName" placeholder="Supplier Name" required>
+                    <input type="text" id="supPhone" placeholder="Phone Number" required>
+                    <input type="email" id="supEmail" placeholder="Email Address" required>
+                    <input type="text" id="supAddress" placeholder="Address" required>
+                </div>
+                <button type="submit">Add Supplier</button>
+                <div id="supStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Supplier List</h2>
+            <table>
+                <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Actions</th></tr></thead>
+                <tbody id="supplierBody"></tbody>
+            </table>
+            <div id="supEmpty" class="empty" style="display:none;">No suppliers yet - add one above</div>
+        </div>
+    </div>
+
+    <!-- MATERIALS PAGE -->
+    <div class="page" id="materials">
+        <div class="card">
+            <h2>Add New Material</h2>
+            <form id="materialForm">
+                <div class="form-grid">
+                    <input type="text" id="matName" placeholder="Material Name (e.g. Cement)" required>
+                    <input type="text" id="matCategory" placeholder="Category" required>
+                    <input type="text" id="matUnit" placeholder="Unit (bag, ton, kg)" required>
+                    <input type="number" step="0.01" id="matPrice" placeholder="Price per Unit" required>
+                    <input type="number" step="0.01" id="matStock" placeholder="Initial Stock Quantity" required>
+                    <select id="matSupplier"></select>
+                </div>
+                <button type="submit">Add Material</button>
+                <div id="matStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Current Stock</h2>
+            <table>
+                <thead>
+                <tr><th>Name</th><th>Category</th><th>Unit</th><th>Price</th><th>Stock</th><th>Supplier</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="materialBody"></tbody>
+            </table>
+            <div id="matEmpty" class="empty" style="display:none;">No materials yet - add one above</div>
+        </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="history">
+        <div class="card">
+            <h2>Stock Transaction History</h2>
+            <div class="form-grid" style="margin-bottom:16px;">
+                <select id="historyMaterialSelect"></select>
+                <button class="secondary" onclick="loadHistory()">View History</button>
+            </div>
+            <table>
+                <thead><tr><th>Date</th><th>Type</th><th>Quantity</th><th>Remarks</th></tr></thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+            <div id="historyEmpty" class="empty" style="display:none;">Select a material to see its history</div>
+        </div>
+    </div>
+
+    <!-- HISOB BOOK PAGE -->
+    <div class="page active" id="hisob">
+
+        <div class="card">
+            <h2>Add New Customer</h2>
+            <form id="customerForm">
+                <div class="form-grid three">
+                    <input type="text" id="custName" placeholder="Customer Name" required>
+                    <input type="text" id="custPhone" placeholder="Phone Number" required>
+                    <input type="text" id="custAddress" placeholder="Site / Address" required>
+                </div>
+                <button type="submit">Add Customer</button>
+                <div id="custStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Log a Trip (Delivery)</h2>
+            <form id="tripForm">
+                <div class="form-grid three">
+                    <select id="tripCustomer" required></select>
+                    <input type="text" id="tripMaterial" placeholder="Material (Sand, Gitti, Murum)" required>
+                    <input type="date" id="tripDate" required>
+                    <input type="number" step="0.01" id="tripQty" placeholder="Quantity" required>
+                    <input type="text" id="tripUnit" placeholder="Unit (brass, ton, trip)" required>
+                    <input type="number" step="0.01" id="tripRate" placeholder="Rate per Unit" required>
+                    <input type="text" id="tripVehicle" placeholder="Vehicle Number" required>
+                    <input type="text" id="tripDriver" placeholder="Driver Name" required>
+                </div>
+                <button type="submit">Log Trip</button>
+                <div id="tripStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Record a Payment</h2>
+            <form id="paymentForm">
+                <div class="form-grid three">
+                    <select id="paySelectCustomer" required></select>
+                    <input type="number" step="0.01" id="payAmount" placeholder="Amount Received" required>
+                    <input type="date" id="payDate" required>
+                    <input type="text" id="payRemarks" placeholder="Remarks (optional)">
+                </div>
+                <button class="success" type="submit">Record Payment</button>
+                <div id="payStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Customers & Balance</h2>
+            <div id="customerGrid" class="customer-grid"></div>
+            <div id="custEmpty" class="empty" style="display:none;">No customers yet - add one above</div>
+        </div>
+
+        <div class="card" id="ledgerCard" style="display:none;">
+            <h2 id="ledgerTitle">Ledger</h2>
+
+            <div class="ledger-summary">
+                <div class="summary-box billed">
+                    <div class="label">Total Billed</div>
+                    <div class="value" id="ledgerBilled">Rs 0</div>
+                </div>
+                <div class="summary-box paid">
+                    <div class="label">Total Paid</div>
+                    <div class="value" id="ledgerPaid">Rs 0</div>
+                </div>
+                <div class="summary-box due">
+                    <div class="label">Balance Due</div>
+                    <div class="value" id="ledgerDue">Rs 0</div>
+                </div>
+            </div>
+
+            <div class="section-title">Trips</div>
+            <table>
+                <thead><tr><th>Date</th><th>Material</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Vehicle</th><th>Driver</th><th>Action</th></tr></thead>
+                <tbody id="ledgerTrips"></tbody>
+            </table>
+
+            <div class="section-title">Payments</div>
+            <table>
+                <thead><tr><th>Date</th><th>Amount</th><th>Remarks</th><th>Action</th></tr></thead>
+                <tbody id="ledgerPayments"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- PENDING DUES PAGE -->
+    <div class="page" id="dues">
+        <div class="card">
+            <h2>Pending Dues Summary</h2>
+            <p style="margin-bottom:14px; color:#888; font-size:0.85rem;">Customers who still owe money, highest due first</p>
+            <table>
+                <thead><tr><th>Customer</th><th>Phone</th><th>Total Billed</th><th>Total Paid</th><th>Balance Due</th><th>Action</th></tr></thead>
+                <tbody id="duesBody"></tbody>
+            </table>
+            <div id="duesEmpty" class="empty" style="display:none;">No pending dues — everyone is clear!</div>
+        </div>
+    </div>
+
+    <!-- PURCHASES PAGE -->
+    <div class="page" id="purchases">
+        <div class="card">
+            <h2>Log a Purchase (Loading from Source)</h2>
+            <form id="purchaseForm">
+                <div class="form-grid three">
+                    <input type="text" id="purSource" placeholder="Source / Quarry Name" required>
+                    <input type="text" id="purMaterial" placeholder="Material (Sand, Gitti, Murum)" required>
+                    <input type="date" id="purDate" required>
+                    <input type="number" step="0.01" id="purQty" placeholder="Quantity" required>
+                    <input type="text" id="purUnit" placeholder="Unit (brass, ton, trip)" required>
+                    <input type="number" step="0.01" id="purRate" placeholder="Rate per Unit" required>
+                    <input type="number" step="0.01" id="purAmountPaid" placeholder="Amount Paid" required>
+                    <input type="text" id="purVehicle" placeholder="Vehicle Number" required>
+                    <input type="text" id="purDriver" placeholder="Driver Name" required>
+                </div>
+                <button type="submit">Log Purchase</button>
+                <div id="purStatus" class="status"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Purchase History</h2>
+            <div class="ledger-summary">
+                <div class="summary-box billed">
+                    <div class="label">Total Purchased</div>
+                    <div class="value" id="purTotalAmount">Rs 0</div>
+                </div>
+                <div class="summary-box paid">
+                    <div class="label">Total Paid</div>
+                    <div class="value" id="purTotalPaid">Rs 0</div>
+                </div>
+                <div class="summary-box due">
+                    <div class="label">Pending to Pay</div>
+                    <div class="value" id="purTotalPending">Rs 0</div>
+                </div>
+            </div>
+            <table>
+                <thead><tr><th>Date</th><th>Source</th><th>Material</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Paid</th><th>Vehicle</th><th>Action</th></tr></thead>
+                <tbody id="purchaseBody"></tbody>
+            </table>
+            <div id="purEmpty" class="empty" style="display:none;">No purchases logged yet</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API = "http://localhost:8081/api";
+    let selectedCustomerId = null;
+
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+            tab.classList.add("active");
+            document.getElementById(tab.dataset.page).classList.add("active");
+            if (tab.dataset.page === "dues") loadDuesSummary();
+            if (tab.dataset.page === "purchases") loadPurchases();
+        });
+    });
+
+    /* ================= SUPPLIERS ================= */
+    async function loadSuppliers() {
+        const res = await fetch(`${API}/suppliers`);
+        const data = await res.json();
+        const body = document.getElementById("supplierBody");
+        const empty = document.getElementById("supEmpty");
+        const select = document.getElementById("matSupplier");
+        body.innerHTML = "";
+        select.innerHTML = '<option value="">-- Select Supplier --</option>';
+
+        empty.style.display = data.length === 0 ? "block" : "none";
+
+        data.forEach(s => {
+            body.innerHTML += `<tr>
+        <td>${s.supplierId}</td><td>${s.name}</td><td>${s.phone}</td><td>${s.email}</td><td>${s.address}</td>
+        <td><button class="danger small" onclick="deleteSupplier(${s.supplierId})">Delete</button></td>
+      </tr>`;
+            select.innerHTML += `<option value="${s.supplierId}">${s.name}</option>`;
+        });
+    }
+
+    async function deleteSupplier(id) {
+        if (!confirm("Delete this supplier?")) return;
+        const res = await fetch(`${API}/suppliers/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+            alert("Could not delete supplier. It may still have materials linked to it. Remove or reassign those materials first.");
+            return;
+        }
+        loadSuppliers();
+    }
+
+    document.getElementById("supplierForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("supStatus");
+        const supplier = {
+            name: document.getElementById("supName").value,
+            phone: document.getElementById("supPhone").value,
+            email: document.getElementById("supEmail").value,
+            address: document.getElementById("supAddress").value
+        };
+        try {
+            const res = await fetch(`${API}/suppliers`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(supplier)
+            });
+            if (!res.ok) throw new Error("Failed to add supplier");
+            status.textContent = "Supplier added";
+            status.className = "status success";
+            e.target.reset();
+            loadSuppliers();
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    /* ================= MATERIALS ================= */
+    async function loadMaterials() {
+        const res = await fetch(`${API}/materials`);
+        const data = await res.json();
+        const body = document.getElementById("materialBody");
+        const empty = document.getElementById("matEmpty");
+        const historySelect = document.getElementById("historyMaterialSelect");
+        body.innerHTML = "";
+        historySelect.innerHTML = '<option value="">-- Select Material --</option>';
+
+        empty.style.display = data.length === 0 ? "block" : "none";
+
+        data.forEach(m => {
+            const low = m.stockQuantity < 10;
+            body.innerHTML += `<tr>
+        <td>${m.name}</td><td>${m.category}</td><td>${m.unit}</td><td>Rs ${m.pricePerUnit}</td>
+        <td class="${low ? 'low-stock' : 'ok-stock'}">${m.stockQuantity} ${low ? '(Low)' : ''}</td>
+        <td>${m.supplier ? m.supplier.name : '-'}</td>
+        <td class="stock-actions">
+          <input type="number" step="0.01" id="qty-${m.materialId}" placeholder="Qty">
+          <button class="secondary small" onclick="stockIn(${m.materialId})">In</button>
+          <button class="small" onclick="stockOut(${m.materialId})">Out</button>
+          <button class="danger small" onclick="deleteMaterial(${m.materialId})">Del</button>
+        </td>
+      </tr>`;
+            historySelect.innerHTML += `<option value="${m.materialId}">${m.name}</option>`;
+        });
+    }
+
+    async function stockIn(id) {
+        const qty = document.getElementById(`qty-${id}`).value;
+        if (!qty || qty <= 0) { alert("Enter a valid quantity"); return; }
+        const remarks = prompt("Remarks (optional):", "Stock delivery") || "";
+        await fetch(`${API}/materials/${id}/stock-in?quantity=${qty}&remarks=${encodeURIComponent(remarks)}`, { method: "PUT" });
+        loadMaterials();
+    }
+
+    async function stockOut(id) {
+        const qty = document.getElementById(`qty-${id}`).value;
+        if (!qty || qty <= 0) { alert("Enter a valid quantity"); return; }
+        const remarks = prompt("Remarks (optional):", "Sold to customer") || "";
+        const res = await fetch(`${API}/materials/${id}/stock-out?quantity=${qty}&remarks=${encodeURIComponent(remarks)}`, { method: "PUT" });
+        if (!res.ok) alert(await res.text());
+        loadMaterials();
+    }
+
+    async function deleteMaterial(id) {
+        if (!confirm("Delete this material? This will also delete its stock transaction history.")) return;
+        const res = await fetch(`${API}/materials/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+            const msg = await res.text();
+            alert(msg);
+            return;
+        }
+        loadMaterials();
+    }
+
+    document.getElementById("materialForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("matStatus");
+        const supplierId = document.getElementById("matSupplier").value;
+
+        const material = {
+            name: document.getElementById("matName").value,
+            category: document.getElementById("matCategory").value,
+            unit: document.getElementById("matUnit").value,
+            pricePerUnit: parseFloat(document.getElementById("matPrice").value),
+            stockQuantity: parseFloat(document.getElementById("matStock").value),
+            supplier: supplierId ? { supplierId: parseInt(supplierId) } : null
+        };
+
+        try {
+            const res = await fetch(`${API}/materials`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(material)
+            });
+            if (!res.ok) throw new Error("Failed to add material");
+            status.textContent = "Material added";
+            status.className = "status success";
+            e.target.reset();
+            loadMaterials();
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    /* ================= STOCK HISTORY ================= */
+    async function loadHistory() {
+        const id = document.getElementById("historyMaterialSelect").value;
+        const body = document.getElementById("historyBody");
+        const empty = document.getElementById("historyEmpty");
+        body.innerHTML = "";
+
+        if (!id) { empty.style.display = "block"; empty.textContent = "Select a material to see its history"; return; }
+
+        const res = await fetch(`${API}/materials/${id}/history`);
+        const data = await res.json();
+
+        if (data.length === 0) { empty.style.display = "block"; empty.textContent = "No transactions yet for this material"; return; }
+        empty.style.display = "none";
+
+        data.forEach(t => {
+            const date = new Date(t.transactionDate).toLocaleString();
+            const typeLabel = t.type === "IN" ? "Stock In" : "Stock Out";
+            body.innerHTML += `<tr><td>${date}</td><td>${typeLabel}</td><td>${t.quantity}</td><td>${t.remarks || '-'}</td></tr>`;
+        });
+    }
+
+    /* ================= HISOB BOOK: CUSTOMERS ================= */
+    async function loadCustomers() {
+        const res = await fetch(`${API}/customers`);
+        const data = await res.json();
+        const grid = document.getElementById("customerGrid");
+        const empty = document.getElementById("custEmpty");
+        const tripSelect = document.getElementById("tripCustomer");
+        const paySelect = document.getElementById("paySelectCustomer");
+
+        grid.innerHTML = "";
+        tripSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+        paySelect.innerHTML = '<option value="">-- Select Customer --</option>';
+
+        empty.style.display = data.length === 0 ? "block" : "none";
+
+        for (const c of data) {
+            tripSelect.innerHTML += `<option value="${c.customerId}">${c.name}</option>`;
+            paySelect.innerHTML += `<option value="${c.customerId}">${c.name}</option>`;
+
+            const ledgerRes = await fetch(`${API}/customers/${c.customerId}/ledger`);
+            const ledger = await ledgerRes.json();
+            const due = ledger.balanceDue || 0;
+
+            const card = document.createElement("div");
+            card.className = "customer-card" + (c.customerId === selectedCustomerId ? " selected" : "");
+            card.innerHTML = `
+      <h3 onclick="showLedger(${c.customerId}, '${c.name.replace(/'/g, "\\'")}')">${c.name}</h3>
+      <p onclick="showLedger(${c.customerId}, '${c.name.replace(/'/g, "\\'")}')">${c.phone} - ${c.address}</p>
+      <span class="balance-badge ${due > 0 ? 'balance-due' : 'balance-clear'}" onclick="showLedger(${c.customerId}, '${c.name.replace(/'/g, "\\'")}')">
+        ${due > 0 ? 'Due: Rs ' + due.toFixed(2) : 'Clear'}
+      </span>
+      <div class="card-actions">
+        <button class="danger small" onclick="deleteCustomer(${c.customerId})">Delete Customer</button>
+      </div>`;
+            grid.appendChild(card);
+        }
+    }
+
+    async function deleteCustomer(id) {
+        if (!confirm("Delete this customer? This will also delete all their trips and payments. This cannot be undone.")) return;
+        const res = await fetch(`${API}/customers/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+            alert("Failed to delete customer. Server response: " + res.status);
+            return;
+        }
+        if (selectedCustomerId === id) {
+            selectedCustomerId = null;
+            document.getElementById("ledgerCard").style.display = "none";
+        }
+        loadCustomers();
+    }
+
+    document.getElementById("customerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("custStatus");
+        const customer = {
+            name: document.getElementById("custName").value,
+            phone: document.getElementById("custPhone").value,
+            address: document.getElementById("custAddress").value
+        };
+        try {
+            const res = await fetch(`${API}/customers`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(customer)
+            });
+            if (!res.ok) throw new Error("Failed to add customer");
+            status.textContent = "Customer added";
+            status.className = "status success";
+            e.target.reset();
+            loadCustomers();
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    async function loadDuesSummary() {
+        const res = await fetch(`${API}/customers/dues-summary`);
+        const data = await res.json();
+        const body = document.getElementById("duesBody");
+        const empty = document.getElementById("duesEmpty");
+        body.innerHTML = "";
+
+        if (data.length === 0) {
+            empty.style.display = "block";
+            return;
+        }
+        empty.style.display = "none";
+
+        data.forEach(d => {
+            body.innerHTML += `<tr>
+      <td>${d.name}</td>
+      <td>${d.phone}</td>
+      <td>Rs ${d.totalBilled.toFixed(2)}</td>
+      <td>Rs ${d.totalPaid.toFixed(2)}</td>
+      <td style="color:#e74c3c; font-weight:700;">Rs ${d.balanceDue.toFixed(2)}</td>
+      <td><button class="secondary small" onclick="document.querySelector('[data-page=hisob]').click(); showLedger(${d.customerId}, '${d.name.replace(/'/g, "\\'")}');">View Ledger</button></td>
+    </tr>`;
+        });
+    }
+
+    /* ================= HISOB BOOK: TRIPS ================= */
+    document.getElementById("tripForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("tripStatus");
+        const customerId = document.getElementById("tripCustomer").value;
+
+        const trip = {
+            customer: { customerId: parseInt(customerId) },
+            materialName: document.getElementById("tripMaterial").value,
+            quantity: parseFloat(document.getElementById("tripQty").value),
+            unit: document.getElementById("tripUnit").value,
+            ratePerUnit: parseFloat(document.getElementById("tripRate").value),
+            vehicleNumber: document.getElementById("tripVehicle").value,
+            driverName: document.getElementById("tripDriver").value,
+            tripDate: document.getElementById("tripDate").value
+        };
+
+        try {
+            const res = await fetch(`${API}/trips`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(trip)
+            });
+            if (!res.ok) throw new Error("Failed to log trip");
+            status.textContent = "Trip logged";
+            status.className = "status success";
+            e.target.reset();
+            loadCustomers();
+            if (selectedCustomerId === parseInt(customerId)) showLedger(selectedCustomerId, null);
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    async function deleteTrip(id) {
+        if (!confirm("Delete this trip entry?")) return;
+        await fetch(`${API}/trips/${id}`, { method: "DELETE" });
+        loadCustomers();
+        if (selectedCustomerId) showLedger(selectedCustomerId, null);
+    }
+
+    function printBill(trip, customer) {
+        const billWindow = window.open('', '_blank', 'width=420,height=650');
+        billWindow.document.write(`
+    <html>
+    <head>
+      <title>Delivery Bill</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #222; }
+        .header { text-align: center; border-bottom: 2px solid #1e3c72; padding-bottom: 10px; margin-bottom: 16px; }
+        .header h1 { color: #1e3c72; font-size: 1.3rem; margin-bottom: 4px; }
+        .header p { font-size: 0.8rem; color: #666; }
+        .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 0.9rem; }
+        .row .label { color: #666; }
+        .row .value { font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.85rem; }
+        th { background: #1e3c72; color: #fff; }
+        .total { text-align: right; font-size: 1.1rem; font-weight: 700; color: #1e3c72; margin-top: 10px; }
+        .footer { margin-top: 30px; text-align: center; font-size: 0.75rem; color: #999; }
+        @media print { .no-print { display: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Building Material Shop</h1>
+        <p>Delivery Bill / Receipt</p>
+      </div>
+      <div class="row"><span class="label">Date:</span><span class="value">${trip.tripDate}</span></div>
+      <div class="row"><span class="label">Customer:</span><span class="value">${customer.name}</span></div>
+      <div class="row"><span class="label">Phone:</span><span class="value">${customer.phone}</span></div>
+      <div class="row"><span class="label">Address:</span><span class="value">${customer.address}</span></div>
+      <table>
+        <tr><th>Material</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+        <tr>
+          <td>${trip.materialName}</td>
+          <td>${trip.quantity} ${trip.unit}</td>
+          <td>Rs ${trip.ratePerUnit}</td>
+          <td>Rs ${trip.totalAmount.toFixed(2)}</td>
+        </tr>
+      </table>
+      <div class="row"><span class="label">Vehicle Number:</span><span class="value">${trip.vehicleNumber}</span></div>
+      <div class="row"><span class="label">Driver Name:</span><span class="value">${trip.driverName}</span></div>
+      <div class="total">Total: Rs ${trip.totalAmount.toFixed(2)}</div>
+      <div class="footer">Thank you for your business!</div>
+      <div class="no-print" style="text-align:center; margin-top:20px;">
+        <button onclick="window.print()" style="padding:10px 20px; background:#f7a600; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Print / Save as PDF</button>
+      </div>
+    </body>
+    </html>
+  `);
+        billWindow.document.close();
+    }
+
+    /* ================= HISOB BOOK: PAYMENTS ================= */
+    document.getElementById("paymentForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("payStatus");
+        const customerId = document.getElementById("paySelectCustomer").value;
+
+        const payment = {
+            customer: { customerId: parseInt(customerId) },
+            amount: parseFloat(document.getElementById("payAmount").value),
+            paymentDate: document.getElementById("payDate").value,
+            remarks: document.getElementById("payRemarks").value
+        };
+
+        try {
+            const res = await fetch(`${API}/payments`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payment)
+            });
+            if (!res.ok) throw new Error("Failed to record payment");
+            status.textContent = "Payment recorded";
+            status.className = "status success";
+            e.target.reset();
+            loadCustomers();
+            if (selectedCustomerId === parseInt(customerId)) showLedger(selectedCustomerId, null);
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    async function deletePayment(id) {
+        if (!confirm("Delete this payment entry?")) return;
+        await fetch(`${API}/payments/${id}`, { method: "DELETE" });
+        loadCustomers();
+        if (selectedCustomerId) showLedger(selectedCustomerId, null);
+    }
+
+    /* ================= HISOB BOOK: LEDGER ================= */
+    async function showLedger(customerId, name) {
+        selectedCustomerId = customerId;
+        document.querySelectorAll(".customer-card").forEach(c => c.classList.remove("selected"));
+
+        const res = await fetch(`${API}/customers/${customerId}/ledger`);
+        const ledger = await res.json();
+
+        document.getElementById("ledgerCard").style.display = "block";
+        document.getElementById("ledgerTitle").textContent = "Ledger - " + (name || ledger.customer.name);
+        document.getElementById("ledgerBilled").textContent = "Rs " + ledger.totalBilled.toFixed(2);
+        document.getElementById("ledgerPaid").textContent = "Rs " + ledger.totalPaid.toFixed(2);
+        document.getElementById("ledgerDue").textContent = "Rs " + ledger.balanceDue.toFixed(2);
+
+        const tripsBody = document.getElementById("ledgerTrips");
+        tripsBody.innerHTML = "";
+        if (ledger.trips.length === 0) {
+            tripsBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999;">No trips yet</td></tr>`;
+        } else {
+            ledger.trips.forEach(t => {
+                const custData = { name: ledger.customer.name, phone: ledger.customer.phone, address: ledger.customer.address };
+                tripsBody.innerHTML += `<tr>
+        <td>${t.tripDate}</td><td>${t.materialName}</td><td>${t.quantity} ${t.unit}</td>
+        <td>Rs ${t.ratePerUnit}</td><td>Rs ${t.totalAmount.toFixed(2)}</td>
+        <td>${t.vehicleNumber}</td><td>${t.driverName}</td>
+        <td>
+          <button class="secondary small" onclick='printBill(${JSON.stringify(t)}, ${JSON.stringify(custData)})'>Print</button>
+          <button class="danger small" onclick="deleteTrip(${t.tripId})">Delete</button>
+        </td>
+      </tr>`;
+            });
+        }
+
+        const paymentsBody = document.getElementById("ledgerPayments");
+        paymentsBody.innerHTML = "";
+        if (ledger.payments.length === 0) {
+            paymentsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">No payments yet</td></tr>`;
+        } else {
+            ledger.payments.forEach(p => {
+                paymentsBody.innerHTML += `<tr>
+        <td>${p.paymentDate}</td><td>Rs ${p.amount.toFixed(2)}</td><td>${p.remarks || '-'}</td>
+        <td><button class="danger small" onclick="deletePayment(${p.paymentId})">Delete</button></td>
+      </tr>`;
+            });
+        }
+
+        loadCustomers();
+    }
+
+    /* ================= PURCHASES ================= */
+    async function loadPurchases() {
+        const res = await fetch(`${API}/purchases`);
+        const data = await res.json();
+        const body = document.getElementById("purchaseBody");
+        const empty = document.getElementById("purEmpty");
+        body.innerHTML = "";
+
+        let totalAmount = 0, totalPaid = 0;
+
+        if (data.length === 0) {
+            empty.style.display = "block";
+        } else {
+            empty.style.display = "none";
+            data.forEach(p => {
+                totalAmount += p.totalAmount;
+                totalPaid += p.amountPaid;
+                const pending = p.totalAmount - p.amountPaid;
+                body.innerHTML += `<tr>
+        <td>${p.purchaseDate}</td><td>${p.sourceName}</td><td>${p.materialName}</td>
+        <td>${p.quantity} ${p.unit}</td><td>Rs ${p.ratePerUnit}</td>
+        <td>Rs ${p.totalAmount.toFixed(2)}</td>
+        <td style="color:${pending > 0 ? '#e74c3c' : '#27ae60'}; font-weight:600;">Rs ${p.amountPaid.toFixed(2)}</td>
+        <td>${p.vehicleNumber}</td>
+        <td><button class="danger small" onclick="deletePurchase(${p.purchaseId})">Delete</button></td>
+      </tr>`;
+            });
+        }
+
+        document.getElementById("purTotalAmount").textContent = "Rs " + totalAmount.toFixed(2);
+        document.getElementById("purTotalPaid").textContent = "Rs " + totalPaid.toFixed(2);
+        document.getElementById("purTotalPending").textContent = "Rs " + (totalAmount - totalPaid).toFixed(2);
+    }
+
+    document.getElementById("purchaseForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const status = document.getElementById("purStatus");
+
+        const purchase = {
+            sourceName: document.getElementById("purSource").value,
+            materialName: document.getElementById("purMaterial").value,
+            quantity: parseFloat(document.getElementById("purQty").value),
+            unit: document.getElementById("purUnit").value,
+            ratePerUnit: parseFloat(document.getElementById("purRate").value),
+            amountPaid: parseFloat(document.getElementById("purAmountPaid").value),
+            vehicleNumber: document.getElementById("purVehicle").value,
+            driverName: document.getElementById("purDriver").value,
+            purchaseDate: document.getElementById("purDate").value
+        };
+
+        try {
+            const res = await fetch(`${API}/purchases`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(purchase)
+            });
+            if (!res.ok) throw new Error("Failed to log purchase");
+            status.textContent = "Purchase logged";
+            status.className = "status success";
+            e.target.reset();
+            loadPurchases();
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+            status.className = "status error";
+        }
+    });
+
+    async function deletePurchase(id) {
+        if (!confirm("Delete this purchase entry?")) return;
+        await fetch(`${API}/purchases/${id}`, { method: "DELETE" });
+        loadPurchases();
+    }
+
+    /* ================= INIT ================= */
+    loadSuppliers();
+    loadMaterials();
+    loadCustomers();
+</script>
+
 </body>
 </html>
